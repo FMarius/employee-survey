@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Employee Survey</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff; --bg2: #f7f7f5; --bg3: #f0efe9;
+    --txt: #1a1a1a; --txt2: #6b6b6b; --brd: rgba(0,0,0,0.12);
+    --acc: #1D9E75; --acc2: #0F6E56; --accl: #E1F5EE; --accd: #085041;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg3); color: var(--txt); min-height: 100vh; }
+  .nav { background: var(--bg); border-bottom: 1px solid var(--brd); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+  .nav-logo { font-size: 16px; font-weight: 600; color: var(--acc); }
+  .nav-badge { font-size: 11px; background: var(--accl); color: var(--accd); padding: 3px 10px; border-radius: 20px; font-weight: 500; }
+  .shell { max-width: 680px; margin: 0 auto; padding: 32px 20px 60px; }
+  .page-title { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  .page-sub { font-size: 14px; color: var(--txt2); margin-bottom: 28px; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 24px; }
+  .tab { padding: 7px 18px; border-radius: 8px; border: 1px solid var(--brd); background: transparent; color: var(--txt2); font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; transition: all .15s; }
+  .tab:hover { background: var(--bg2); }
+  .tab.on { background: var(--accl); color: var(--accd); border-color: #5DCAA5; }
+  .tab:disabled { opacity: .35; cursor: default; }
+  .card { background: var(--bg); border: 1px solid var(--brd); border-radius: 12px; padding: 20px; margin-bottom: 14px; }
+  .card-label { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--txt2); margin-bottom: 8px; }
+  input[type=text], textarea { width: 100%; background: var(--bg2); border: 1px solid var(--brd); border-radius: 8px; padding: 10px 13px; color: var(--txt); font-family: inherit; font-size: 14px; outline: none; transition: border .15s; }
+  input[type=text]:focus, textarea:focus { border-color: var(--acc); box-shadow: 0 0 0 3px rgba(29,158,117,.12); }
+  textarea { resize: vertical; min-height: 80px; }
+  button { font-family: inherit; cursor: pointer; border-radius: 8px; font-size: 14px; font-weight: 500; transition: all .15s; }
+  button:active { transform: scale(.98); }
+  button:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+  .btn { padding: 9px 20px; border: 1px solid var(--brd); background: var(--bg); color: var(--txt); }
+  .btn:hover { background: var(--bg2); }
+  .btn-primary { padding: 11px 24px; background: var(--acc); color: #fff; border: none; }
+  .btn-primary:hover { background: var(--acc2); }
+  .btn-full { width: 100%; display: block; }
+  .btn-danger { padding: 9px 20px; border: 1px solid #F7C1C1; background: transparent; color: #A32D2D; }
+  .btn-danger:hover { background: #FCEBEB; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .q-row { display: flex; align-items: flex-start; gap: 10px; }
+  .q-num { font-size: 15px; font-weight: 600; color: var(--acc); min-width: 22px; padding-top: 10px; }
+  .qr-center { display: flex; flex-direction: column; align-items: center; gap: 16px; background: var(--bg2); border-radius: 12px; padding: 32px 20px; border: 1px solid var(--brd); }
+  .qr-frame { background: #fff; padding: 16px; border-radius: 10px; border: 1px solid var(--brd); }
+  .qr-hint { font-size: 13px; color: var(--txt2); }
+  .url-box { font-size: 11px; color: var(--txt2); background: var(--bg); border: 1px solid var(--brd); border-radius: 8px; padding: 9px 13px; word-break: break-all; max-width: 440px; text-align: center; line-height: 1.7; }
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+  .stat { background: var(--bg); border: 1px solid var(--brd); border-radius: 10px; padding: 16px; text-align: center; }
+  .stat-n { font-size: 30px; font-weight: 600; color: var(--acc); }
+  .stat-l { font-size: 11px; color: var(--txt2); text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
+  .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--brd); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; min-width: 500px; }
+  th { background: var(--bg2); color: var(--txt2); font-weight: 600; padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--brd); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--brd); color: var(--txt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg2); }
+  .survey-wrap { max-width: 560px; margin: 0 auto; }
+  .prog-bar { height: 4px; background: var(--brd); border-radius: 2px; margin-bottom: 24px; overflow: hidden; }
+  .prog-fill { height: 100%; background: var(--acc); border-radius: 2px; transition: width .3s; }
+  .empty { text-align: center; padding: 48px 20px; color: var(--txt2); font-size: 14px; }
+  .success-wrap { text-align: center; padding: 60px 20px; }
+  .success-icon { width: 56px; height: 56px; border-radius: 50%; background: var(--accl); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }
+  .success-icon svg { width: 28px; height: 28px; }
+  @media (max-width: 500px) {
+    .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    .shell { padding: 20px 14px 40px; }
+    .nav { padding: 12px 16px; }
+  }
+  @media print {
+    .nav, .tabs, .btn-row, .page-title, .page-sub { display: none !important; }
+    .qr-center { border: none; padding: 0; background: white; }
+    body { background: white; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo" id="nav-logo">EmployeePoll</div>
+  <span class="nav-badge" id="nav-badge" style="display:none"></span>
+</nav>
+
+<div class="shell" id="root"></div>
+
+<script>
+// ── HARDCODED BASE URL — QR code always points here ──────────────────────────
+var BASE_URL = 'https://fmarius.github.io/employee-survey/';
+
+var S = {
+  view: 'setup',
+  surveyMode: false,
+  surveyConfig: null,
+  questions: ['', '', '', '', ''],
+  surveyTitle: 'Employee Survey',
+  responses: [],
+  svAnswers: ['', '', '', '', ''],
+  svName: '',
+  svDone: false
+};
+
+try {
+  var _d = JSON.parse(localStorage.getItem('emp_survey_gh2') || '{}');
+  if (_d.questions) S.questions = _d.questions;
+  if (_d.responses) S.responses = _d.responses;
+  if (_d.surveyTitle) S.surveyTitle = _d.surveyTitle;
+} catch(e) {}
+
+function persist() {
+  try { localStorage.setItem('emp_survey_gh2', JSON.stringify({ questions: S.questions, responses: S.responses, surveyTitle: S.surveyTitle })); } catch(e) {}
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function updateNavBadge() {
+  var b = document.getElementById('nav-badge');
+  if (!b) return;
+  if (S.responses.length > 0) { b.textContent = S.responses.length + ' response' + (S.responses.length > 1 ? 's' : ''); b.style.display = ''; }
+  else b.style.display = 'none';
+}
+
+function re() {
+  var hash = window.location.hash;
+  if (hash.startsWith('#s:')) {
+    try {
+      var cfg = JSON.parse(decodeURIComponent(escape(atob(hash.slice(3)))));
+      S.surveyMode = true; S.surveyConfig = cfg;
+      S.svAnswers = cfg.questions.map(function() { return ''; });
+      S.svName = ''; S.svDone = false;
+      document.getElementById('nav-logo').textContent = cfg.title;
+      renderSurvey(); return;
+    } catch(ex) {}
+  }
+  updateNavBadge();
+  if (S.view === 'setup') renderSetup();
+  else if (S.view === 'qr') renderQR();
+  else if (S.view === 'results') renderResults();
+}
+
+function tabsHTML(active) {
+  var hasQR = S.questions.every(function(q) { return q.trim(); }) && S.surveyTitle.trim();
+  return '<div class="tabs">' +
+    '<button class="tab' + (active==='setup'?' on':'') + '" onclick="S.view=\'setup\';re()">Setup</button>' +
+    '<button class="tab' + (active==='qr'?' on':'') + '" onclick="S.view=\'qr\';re();" ' + (hasQR?'':'disabled') + '>QR code</button>' +
+    '<button class="tab' + (active==='results'?' on':'') + '" onclick="S.view=\'results\';re()">Results' +
+    (S.responses.length ? ' <span style="background:#E1F5EE;color:#085041;padding:1px 7px;border-radius:12px;font-size:11px;font-weight:600;">'+S.responses.length+'</span>' : '') +
+    '</button></div>';
+}
+
+// ── SETUP ─────────────────────────────────────────────────────────────────────
+function renderSetup() {
+  var ok = S.surveyTitle.trim() && S.questions.every(function(q) { return q.trim(); });
+  var html = '<div class="page-title">Survey builder</div><div class="page-sub">Enter your survey title and 5 questions. Then go to the QR Code tab to get your scannable code.</div>';
+  html += tabsHTML('setup');
+  html += '<div class="card"><div class="card-label">Survey title</div>';
+  html += '<input type="text" id="sv-title" value="' + esc(S.surveyTitle) + '" placeholder="e.g. Q2 Employee Pulse Survey" oninput="S.surveyTitle=this.value;persist();checkOk();"></div>';
+  for (var i = 0; i < 5; i++) {
+    html += '<div class="card"><div class="q-row"><span class="q-num">' + (i+1) + '</span>';
+    html += '<div style="flex:1"><div class="card-label">Question ' + (i+1) + '</div>';
+    html += '<input type="text" id="q' + i + '" value="' + esc(S.questions[i]) + '" placeholder="Type your question here..." oninput="S.questions[' + i + ']=this.value;persist();checkOk();"></div></div></div>';
+  }
+  html += '<button class="btn-primary btn-full" id="gen-ok" onclick="doGenerate()" ' + (ok?'':'disabled') + ' style="padding:13px;">Save &amp; go to QR code &rarr;</button>';
+  document.getElementById('root').innerHTML = html;
+}
+
+function checkOk() {
+  var ok = document.getElementById('sv-title') && document.getElementById('sv-title').value.trim() &&
+    [0,1,2,3,4].every(function(i){ var el=document.getElementById('q'+i); return el&&el.value.trim(); });
+  var btn = document.getElementById('gen-ok');
+  if (btn) btn.disabled = !ok;
+}
+
+function doGenerate() {
+  var titleEl = document.getElementById('sv-title');
+  if (titleEl) S.surveyTitle = titleEl.value.trim();
+  for (var i = 0; i < 5; i++) { var el = document.getElementById('q'+i); if (el) S.questions[i] = el.value.trim(); }
+  persist();
+  S.view = 'qr'; renderQR();
+}
+
+// ── QR ────────────────────────────────────────────────────────────────────────
+function getSurveyURL() {
+  var cfg = { title: S.surveyTitle, questions: S.questions };
+  return BASE_URL + '#s:' + btoa(unescape(encodeURIComponent(JSON.stringify(cfg))));
+}
+
+function renderQR() {
+  var url = getSurveyURL();
+  var html = '<div class="page-title">QR code</div><div class="page-sub">Print or display this. Employees scan it with their phone to open the survey.</div>';
+  html += tabsHTML('qr');
+  html += '<div class="qr-center">';
+  html += '<div style="font-size:16px;font-weight:600;color:var(--accd)">' + esc(S.surveyTitle) + '</div>';
+  html += '<div class="qr-frame"><canvas id="qrc" width="240" height="240"></canvas></div>';
+  html += '<div class="qr-hint">Scan with any smartphone camera</div>';
+  html += '<div class="url-box">' + esc(url) + '</div>';
+  html += '<div class="btn-row"><button class="btn" onclick="copyURL(this)">Copy link</button><button class="btn" onclick="window.print()">Print</button><button class="btn-danger" onclick="S.view=\'setup\';re()">Edit questions</button></div>';
+  html += '</div>';
+  html += '<div class="card" style="margin-top:16px"><div class="card-label">Questions in this survey</div>';
+  S.questions.forEach(function(q, i) {
+    html += '<div style="display:flex;gap:10px;align-items:baseline;margin-bottom:10px;font-size:14px;">';
+    html += '<span style="color:var(--acc);font-weight:600;min-width:20px">' + (i+1) + '.</span><span>' + esc(q) + '</span></div>';
+  });
+  html += '</div>';
+  document.getElementById('root').innerHTML = html;
+  drawQR(url);
+  updateNavBadge();
+}
+
+function copyURL(btn) {
+  navigator.clipboard.writeText(getSurveyURL()).then(function() {
+    btn.textContent = 'Copied!';
+    setTimeout(function() { btn.textContent = 'Copy link'; }, 2000);
+  });
+}
+
+function drawQR(text) {
+  var canvas = document.getElementById('qrc');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  try {
+    var grid = makeQR(text);
+    var sz = canvas.width;
+    var mod = grid.length;
+    var cell = Math.floor((sz - 20) / mod);
+    var off = Math.floor((sz - cell * mod) / 2);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, sz, sz);
+    ctx.fillStyle = '#111111';
+    for (var r = 0; r < mod; r++)
+      for (var c = 0; c < mod; c++)
+        if (grid[r][c]) ctx.fillRect(off + c*cell, off + r*cell, cell, cell);
+  } catch(ex) {
+    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,240,240);
+    ctx.fillStyle = '#666'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('Use the copy link button below', 120, 120);
+  }
+}
+
+// ── SURVEY (what employees see on their phone) ─────────────────────────────────
+function renderSurvey() {
+  var cfg = S.surveyConfig;
+  if (S.svDone) {
+    document.getElementById('root').innerHTML =
+      '<div class="success-wrap">' +
+      '<div class="success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#085041" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>' +
+      '<div style="font-size:22px;font-weight:600;margin-bottom:8px;">Thank you!</div>' +
+      '<div style="font-size:15px;color:var(--txt2)">Your response has been recorded.</div>' +
+      '<div style="margin-top:16px;font-size:14px;color:var(--acc);font-weight:500">' + esc(cfg.title) + '</div>' +
+      '</div>';
+    return;
+  }
+  var filled = S.svAnswers.filter(function(a) { return a.trim(); }).length;
+  var pct = Math.round(filled / cfg.questions.length * 100);
+  var html = '<div class="survey-wrap">';
+  html += '<div style="text-align:center;margin-bottom:24px;">';
+  html += '<div style="font-size:22px;font-weight:600;margin-bottom:4px;">' + esc(cfg.title) + '</div>';
+  html += '<div style="font-size:13px;color:var(--txt2)">5 open-text questions &middot; takes ~2 minutes</div></div>';
+  html += '<div class="prog-bar"><div class="prog-fill" id="sv-prog" style="width:' + pct + '%"></div></div>';
+  html += '<div class="card"><div class="card-label">Your name (optional)</div>';
+  html += '<input type="text" id="sv-nm" value="' + esc(S.svName) + '" placeholder="e.g. Jane Doe" oninput="S.svName=this.value;"></div>';
+  cfg.questions.forEach(function(q, i) {
+    html += '<div class="card"><div class="card-label">Question ' + (i+1) + ' of ' + cfg.questions.length + '</div>';
+    html += '<div style="font-size:15px;font-weight:500;margin-bottom:12px;">' + esc(q) + '</div>';
+    html += '<textarea id="sva' + i + '" placeholder="Type your answer here..." oninput="S.svAnswers[' + i + ']=this.value;updateProg();">' + esc(S.svAnswers[i]) + '</textarea></div>';
+  });
+  html += '<button class="btn-primary btn-full" id="sv-sub" onclick="submitSurvey()" ' + (filled < cfg.questions.length ? 'disabled' : '') + ' style="padding:13px;font-size:15px;margin-top:4px;">Submit response</button>';
+  html += '</div>';
+  document.getElementById('root').innerHTML = html;
+}
+
+function updateProg() {
+  var cfg = S.surveyConfig;
+  var filled = S.svAnswers.filter(function(a) { return a.trim(); }).length;
+  var pct = Math.round(filled / cfg.questions.length * 100);
+  var bar = document.getElementById('sv-prog'); if (bar) bar.style.width = pct + '%';
+  var btn = document.getElementById('sv-sub'); if (btn) btn.disabled = filled < cfg.questions.length;
+}
+
+function submitSurvey() {
+  var entry = { id: Date.now(), ts: new Date().toLocaleString(), name: S.svName || 'Anonymous', answers: S.svAnswers.slice() };
+  S.responses.push(entry); persist();
+  S.svDone = true; renderSurvey();
+}
+
+// ── RESULTS ───────────────────────────────────────────────────────────────────
+function renderResults() {
+  var html = '<div class="page-title">Results</div><div class="page-sub">' + esc(S.surveyTitle) + '</div>';
+  html += tabsHTML('results');
+  html += '<div class="stat-grid">';
+  html += '<div class="stat"><div class="stat-n">' + S.responses.length + '</div><div class="stat-l">Responses</div></div>';
+  html += '<div class="stat"><div class="stat-n">5</div><div class="stat-l">Questions</div></div>';
+  html += '<div class="stat"><div class="stat-n">' + (S.responses.length ? 'Live' : '&mdash;') + '</div><div class="stat-l">Status</div></div>';
+  html += '</div>';
+  html += '<div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">';
+  html += '<button class="btn-primary" onclick="doExport()" ' + (S.responses.length ? '' : 'disabled') + '>Download Excel file</button>';
+  if (S.responses.length) html += '<button class="btn-danger" onclick="if(confirm(\'Clear all responses?\'))' + '{S.responses=[];persist();re();}' + '">Clear all</button>';
+  html += '</div>';
+  if (!S.responses.length) {
+    html += '<div class="empty"><div style="font-size:36px;margin-bottom:12px">&#128236;</div>No responses yet. Share the QR code to start collecting.</div>';
+  } else {
+    html += '<div class="table-wrap"><table><thead><tr><th style="width:36px">#</th><th style="width:130px">Submitted</th><th style="width:110px">Name</th>';
+    S.questions.forEach(function(_, i) { html += '<th style="width:160px">Q' + (i+1) + '</th>'; });
+    html += '</tr></thead><tbody>';
+    S.responses.forEach(function(r, idx) {
+      html += '<tr><td>' + (idx+1) + '</td><td>' + esc(r.ts) + '</td><td>' + esc(r.name) + '</td>';
+      r.answers.forEach(function(a) { html += '<td title="' + esc(a) + '">' + esc(a) + '</td>'; });
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+  document.getElementById('root').innerHTML = html;
+  updateNavBadge();
+}
+
+function doExport() {
+  if (typeof XLSX === 'undefined') { alert('Excel library still loading, please try again.'); return; }
+  var headers = ['#', 'Timestamp', 'Name'].concat(S.questions.map(function(q, i) { return 'Q'+(i+1)+': '+q; }));
+  var rows = S.responses.map(function(r, i) { return [i+1, r.ts, r.name].concat(r.answers); });
+  var wb = XLSX.utils.book_new();
+  var ws = XLSX.utils.aoa_to_sheet([headers].concat(rows));
+  ws['!cols'] = headers.map(function(_, i) { return { wch: i < 3 ? 20 : 50 }; });
+  XLSX.utils.book_append_sheet(wb, ws, 'Responses');
+  var sum = [['Survey', S.surveyTitle], ['Total responses', S.responses.length], ['Exported', new Date().toLocaleString()], []];
+  S.questions.forEach(function(q, i) { sum.push(['Q'+(i+1), q]); sum.push([]); });
+  var ws2 = XLSX.utils.aoa_to_sheet(sum);
+  ws2['!cols'] = [{wch:12},{wch:60}];
+  XLSX.utils.book_append_sheet(wb, ws2, 'Summary');
+  XLSX.writeFile(wb, (S.surveyTitle||'survey').replace(/\s+/g,'_')+'_responses.xlsx');
+}
+
+// ── QR CODE GENERATOR (pure JS, no library) ───────────────────────────────────
+function makeQR(text) {
+  var GF=new Array(256),GI=new Array(256);
+  GF[0]=1;
+  for(var i=1;i<256;i++){GF[i]=GF[i-1]<<1;if(GF[i]>=256)GF[i]^=285;}
+  for(var i=0;i<255;i++)GI[GF[i]]=i;
+  function gm(a,b){if(!a||!b)return 0;return GF[(GI[a]+GI[b])%255];}
+  function gp(x,p){var r=1;for(var i=0;i<p;i++)r=gm(r,x);return r;}
+  function pm(p,q){var r=new Array(p.length+q.length-1).fill(0);for(var i=0;i<p.length;i++)for(var j=0;j<q.length;j++)r[i+j]^=gm(p[i],q[j]);return r;}
+  function rs(data,el){
+    var gen=[1];for(var i=0;i<el;i++)gen=pm(gen,[1,gp(2,i)]);
+    var msg=data.slice();
+    for(var i=0;i<data.length;i++){var cf=msg[i];if(cf)for(var j=1;j<gen.length;j++)msg[i+j]^=gm(gen[j],cf);}
+    return msg.slice(data.length);
+  }
+  var bytes=[];for(var i=0;i<text.length;i++)bytes.push(text.charCodeAt(i)&0xFF);
+  var DC=16,EC=7;
+  var data=[0x40|(bytes.length>>4),((bytes.length&0xF)<<4)|((bytes[0]||0)>>4)];
+  for(var i=0;i<bytes.length-1;i++)data.push(((bytes[i]&0xF)<<4)|(bytes[i+1]>>4));
+  if(bytes.length)data.push((bytes[bytes.length-1]&0xF)<<4);
+  while(data.length<DC){data.push(0xEC);if(data.length<DC)data.push(0x11);}
+  data=data.slice(0,DC);
+  var all=data.concat(rs(data,EC));
+  var N=21,g=[];
+  for(var r=0;r<N;r++)g.push(new Array(N).fill(-1));
+  function sr(r,c,pat){for(var dr=0;dr<pat.length;dr++)for(var dc=0;dc<pat[dr].length;dc++){if(r+dr>=0&&r+dr<N&&c+dc>=0&&c+dc<N)g[r+dr][c+dc]=pat[dr][dc];}}
+  var F=[[1,1,1,1,1,1,1],[1,0,0,0,0,0,1],[1,0,1,1,1,0,1],[1,0,1,1,1,0,1],[1,0,1,1,1,0,1],[1,0,0,0,0,0,1],[1,1,1,1,1,1,1]];
+  sr(0,0,F);sr(0,N-7,F);sr(N-7,0,F);
+  for(var i=0;i<8;i++){if(g[7][i]<0)g[7][i]=0;if(g[i][7]<0)g[i][7]=0;if(g[7][N-8+i]<0)g[7][N-8+i]=0;if(g[i][N-8]<0)g[i][N-8]=0;if(g[N-8][i]<0)g[N-8][i]=0;if(g[N-1-i][7]<0)g[N-1-i][7]=0;}
+  for(var i=0;i<N;i++){if(g[6][i]<0)g[6][i]=i%2?0:1;if(g[i][6]<0)g[i][6]=i%2?0:1;}
+  g[N-8][8]=1;
+  var bits=[];
+  for(var b=0;b<all.length;b++)for(var k=7;k>=0;k--)bits.push((all[b]>>k)&1);
+  var right=N-1,up=true,bi=0;
+  while(right>=1){
+    if(right===6)right--;
+    for(var row=0;row<N;row++){
+      var r2=up?N-1-row:row;
+      for(var col=right;col>=right-1;col--){
+        if(g[r2][col]<0){var bit=bi<bits.length?bits[bi++]:0;g[r2][col]=bit^((r2+col)%2?0:1);}
+      }
+    }
+    up=!up;right-=2;
+  }
+  for(var r=0;r<N;r++)for(var c=0;c<N;c++)if(g[r][c]<0)g[r][c]=0;
+  var fb=[0,0,1,0,1,0,1,0,0,0,1,1,0,0,1];
+  for(var i=0;i<6;i++)g[8][i]=fb[i];
+  g[8][7]=fb[6];g[8][8]=fb[7];g[7][8]=fb[8];
+  for(var i=0;i<6;i++)g[5-i][8]=fb[9+i];
+  for(var i=0;i<8;i++)g[N-1-i][8]=fb[i];
+  for(var i=0;i<7;i++)g[8][N-7+i]=fb[8+i];
+  return g;
+}
+
+re();
+</script>
+</body>
+</html>
