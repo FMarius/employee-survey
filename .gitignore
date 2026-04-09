@@ -1,0 +1,5 @@
+responses.xlsx
+static/qr.png
+__pycache__/
+*.pyc
+.env
